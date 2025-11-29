@@ -1,0 +1,10 @@
+.vs/
+out/
+build/
+*.user
+*.exe
+*.pdb
+*.ilk
+cmake-build-debug/
+vcpkg/
+vcpkg_installed/
