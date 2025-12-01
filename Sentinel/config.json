@@ -1,0 +1,5 @@
+{
+  "fim_target": "test.txt",
+  "log_target": "system.log",
+  "check_interval_ms": 2000
+}

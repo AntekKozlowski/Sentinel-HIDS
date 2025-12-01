@@ -1,80 +1,89 @@
 ﻿# Sentinel HIDS 🛡️
 
-![Status](https://img.shields.io/badge/Status-Work_in_Progress-yellow.svg)
+![Status](https://img.shields.io/badge/Status-Active_Development-brightgreen.svg)
 ![Language](https://img.shields.io/badge/language-C%2B%2B17-blue.svg)
 ![Build](https://img.shields.io/badge/build-CMake-green.svg)
-![Security](https://img.shields.io/badge/crypto-OpenSSL-red.svg)
+![License](https://img.shields.io/badge/license-MIT-lightgrey.svg)
 
-**Sentinel** is a lightweight, high-performance **Host-based Intrusion Detection System (HIDS)** developed in modern C++. It is designed to protect system integrity by monitoring critical files for unauthorized modifications in real-time.
+**Sentinel** is a lightweight, high-performance **Host-based Intrusion Detection System (HIDS)** developed in modern C++. It provides real-time monitoring of system integrity and analyzes logs for suspicious patterns.
 
 The project demonstrates low-level system programming, cryptographic operations using OpenSSL, and robust resource management.
 
 ## 🚀 Key Features
 
-* **File Integrity Monitoring (FIM):** Continuously monitors specified critical files (e.g., config files, hosts, system binaries).
-* **Cryptographic Verification:** Utilizes **SHA-256** (via OpenSSL) to generate unique fingerprints for file verification.
-* **Smart Polling Engine:** optimized detection loop that minimizes CPU usage while maintaining high alert responsiveness.
-* **Memory Efficiency:** Implements chunk-based file reading to handle large files without consuming excessive RAM.
-* **Modern Architecture:** Written in C++17 using Object-Oriented Programming (OOP) principles.
+* **File Integrity Monitoring (FIM):** Detects unauthorized modifications to critical files using **SHA-256** hashing (OpenSSL).
+* **Log Analysis (SIEM):** Real-time parsing of system logs to detect brute-force attacks using Regex heuristics.
+* **JSON Configuration:** Fully configurable via `config.json`—no recompilation needed.
+* **Portable Architecture:** Runs directly from the build folder; automatically handles relative file paths.
+* **Efficient Resource Usage:** Optimized polling loop with configurable intervals and chunk-based file reading.
 
 ## 🛠️ Tech Stack
 
-* **Core Language:** C++17 (STL, `std::filesystem`, `std::vector`, `std::thread`)
+* **Core Language:** C++17
 * **Build System:** CMake
-* **Cryptography:** OpenSSL (linked via vcpkg)
-* **Version Control:** Git & GitHub
+* **Libraries:**
+  * `OpenSSL` (Cryptographic functions)
+  * `nlohmann/json` (Configuration parsing)
+* **Package Manager:** vcpkg
 
-## ⚙️ How It Works
+## ⚙️ Configuration (`config.json`)
 
-1.  **Baseline Acquisition:** Upon startup, Sentinel scans the target files and calculates their initial SHA-256 hashes. This establishes a "trusted state".
-2.  **Monitoring Daemon:** The system enters an infinite monitoring loop (daemon mode).
-3.  **Change Detection:** Periodically re-calculates hashes and compares them against the baseline.
-4.  **Alerting:** If `Current_Hash != Baseline_Hash`, a security alert is triggered immediately, identifying the compromised file.
+Sentinel uses a JSON file for configuration. It must be located in the same directory as the executable.
+
+```json
+{
+  "fim_target": "test.txt",       // Path to the file monitored for integrity changes
+  "log_target": "system.log",     // Path to the log file analyzed for attacks
+  "check_interval_ms": 2000        // Scanning interval in milliseconds
+}
+```
 
 ## 📥 Getting Started
 
 ### Prerequisites
+- C++ Compiler (MSVC, GCC, or Clang)
+- CMake (3.10 or higher)
+- vcpkg package manager
 
-* C++ Compiler (MSVC, GCC, or Clang)
-* CMake (3.10 or higher)
-* [vcpkg](https://github.com/microsoft/vcpkg) (package manager for OpenSSL)
+### Installation & Build
 
-### Build Instructions
+Clone the repository:
 
-1.  **Clone the repository:**
-    ```bash
-    git clone [https://github.com/AntekKozlowski/Sentinel-HIDS.git](https://github.com/AntekKozlowski/Sentinel-HIDS.git)
-    cd Sentinel-HIDS
-    ```
+```bash
+git clone https://github.com/AntekKozlowski/Sentinel-HIDS.git
+cd Sentinel-HIDS
+```
 
-2.  **Install OpenSSL dependencies:**
-    ```bash
-    vcpkg install openssl:x64-windows
-    ```
+Install dependencies:
 
-3.  **Build with CMake:**
-    ```bash
-    mkdir build
-    cd build
-    cmake .. -DCMAKE_TOOLCHAIN_FILE=[path_to_vcpkg]/scripts/buildsystems/vcpkg.cmake
-    cmake --build .
-    ```
+```bash
+vcpkg install openssl:x64-windows nlohmann-json:x64-windows
+```
 
-4.  **Run Sentinel:**
-    ```bash
-    ./Sentinel.exe
-    ```
+Build with CMake:
+
+```bash
+mkdir build
+cd build
+cmake .. -DCMAKE_TOOLCHAIN_FILE=[path_to_vcpkg]/scripts/buildsystems/vcpkg.cmake
+cmake --build .
+```
+
+Run Sentinel (ensure `config.json` is present in the executable directory):
+
+```bash
+./Sentinel.exe
+```
 
 ## 🔮 Roadmap
-
-* [ ] Integration with Syslog for remote logging.
-* [ ] Log Watcher module (detecting brute-force attacks in `auth.log`).
-* [ ] JSON configuration file support.
-* [ ] Windows Service / Linux Daemon mode.
+- [ ] Syslog Integration for remote logging.
+- [ ] Windows Service / Linux Daemon mode.
+- [ ] Webhook Alerts (Discord/Slack).
+- [ ] Multi-threading for parallel FIM & LogWatcher processing.
 
 ## 👨‍💻 Author
 
-**[YOUR NAME]**
+**Antoni Kozłowski**
 *Cybersecurity Student & C++ Developer*
 
 ---
