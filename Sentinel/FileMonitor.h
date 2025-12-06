@@ -1,22 +1,23 @@
 #pragma once
 #include <string>
-#include <filesystem> // C++17 filesystem support
+#include <filesystem>
+#include "AlertSender.h"
 
-// Class responsible for File Integrity Monitoring (FIM)
-// It works by comparing cryptographic hashes (SHA-256) of files.
+using namespace std;
+
+// File Integrity Monitor (FIM) using SHA-256 hashing
 class FileMonitor {
 public:
-    // Constructor: takes the path to the monitored file
-    FileMonitor(const std::string& filepath);
+    // Constructor: sets target file and calculates initial hash
+    FileMonitor(const string& filepath);
 
-    // Main method to check file status
-    // Returns TRUE if an unauthorized modification is detected
-    bool check();
+    // Checks for modifications. Triggers alert if hash mismatch found.
+    bool check(AlertSender& sender);
 
 private:
-    std::filesystem::path monitored_path;
-    std::string last_hash; // Stores the "baseline" (last known valid hash)
+    filesystem::path monitored_path;
+    string last_hash; // Baseline fingerprint
 
-    // Internal helper: opens the file, reads it in chunks, and calculates the hash
-    std::string calculate_hash();
+    // Helper: Calculates SHA-256 hash of the file
+    string calculate_hash();
 };

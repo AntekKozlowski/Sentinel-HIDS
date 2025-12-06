@@ -1,4 +1,4 @@
-#include "LogWatcher.h"
+﻿#include "LogWatcher.h"
 #include <iostream>
 #include <filesystem>
 
@@ -7,14 +7,11 @@ using namespace std;
 LogWatcher::LogWatcher(const string& filepath) {
     monitored_path = filepath;
 
-    // Define the Attack Pattern (Regex)
-    // We look for "failed" AND ("password" OR "login"), ignoring case sensitivity.
-    // Examples caught: "Failed password for root", "Login FAILED"
+    // Pattern: Matches "failed" AND ("password" OR "login")
     suspicious_pattern = regex(".*failed.*(password|login).*", regex_constants::icase);
 
-    // On startup, move the cursor to the END of the file.
-    // We only want to analyze *new* log entries, not historical data.
-    ifstream file(monitored_path, ios::ate); // 'ate' = At The End
+    // Move cursor to END of file to ignore historical logs
+    ifstream file(monitored_path, ios::ate);
     if (file.good()) {
         last_position = file.tellg();
     }
@@ -23,27 +20,27 @@ LogWatcher::LogWatcher(const string& filepath) {
     }
 }
 
-void LogWatcher::check() {
+void LogWatcher::check(AlertSender& sender) {
     if (!filesystem::exists(monitored_path)) return;
 
     ifstream file(monitored_path);
     if (!file.good()) return;
 
-    // 1. Resume reading from the last known position
+    // Resume reading from last known position
     file.seekg(last_position);
 
     string line;
-    // 2. Process only new lines
     while (getline(file, line)) {
-        // 3. Apply Heuristics / Regex Analysis
+        // Apply Regex analysis
         if (regex_match(line, suspicious_pattern)) {
-            cout << "\n[!!! LOG ALERT !!!] Suspicious activity detected!" << endl;
-            cout << "Source:  " << monitored_path << endl;
-            cout << "Payload: " << line << endl;
+            string msg = "**LOG ALERT**\nSuspicious entry: `" + line + "`";
+            cout << "\n[!!! LOG ALERT !!!] " << msg << endl;
+
+            sender.send(msg);
         }
     }
 
-    // 4. Clear EOF flag and save the new cursor position
+    // Reset EOF flag and save new cursor position
     if (file.eof()) {
         file.clear();
     }

@@ -2,21 +2,20 @@
 #include <string>
 #include <fstream>
 #include <regex>
+#include "AlertSender.h"
 
 using namespace std;
 
-// Module responsible for parsing system logs to detect anomalies
+// Log Analysis Module using Regex heuristics
 class LogWatcher {
 public:
     LogWatcher(const string& filepath);
 
-    void check();
+    // Scans new log entries for suspicious patterns
+    void check(AlertSender& sender);
 
 private:
     string monitored_path;
     streampos last_position;
-
-    // Attack pattern (Regex)
-    // We are looking for phrases like "Failed password" or "Login failed"
     regex suspicious_pattern;
 };

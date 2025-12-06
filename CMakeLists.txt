@@ -9,7 +9,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # 1. Find packages (OpenSSL + JSON)
 find_package(OpenSSL REQUIRED)
-find_package(nlohmann_json CONFIG REQUIRED) 
+find_package(nlohmann_json CONFIG REQUIRED)
+find_package(cpr CONFIG REQUIRED)
 
 add_executable (Sentinel 
     "Sentinel/main.cpp" 
@@ -17,11 +18,17 @@ add_executable (Sentinel
     "Sentinel/FileMonitor.h"
     "Sentinel/LogWatcher.cpp"
     "Sentinel/LogWatcher.h"
-)
+    "Sentinel/AlertSender.cpp" 
+    "Sentinel/AlertSender.h")
 
 # 2. Link libraries
 target_link_libraries(Sentinel PRIVATE 
     OpenSSL::SSL 
     OpenSSL::Crypto
     nlohmann_json::nlohmann_json
+    cpr::cpr
 )
+
+# 3. Config copy
+configure_file("Sentinel/config.json" "config.json" COPYONLY)
+configure_file("Sentinel/test.txt" "test.txt" COPYONLY)
