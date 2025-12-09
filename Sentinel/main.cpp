@@ -2,81 +2,117 @@
 #include <fstream>
 #include <vector>
 #include <thread>
+#include <mutex>
 #include <chrono>
 #include <filesystem>
 #include <nlohmann/json.hpp>
+#include <windows.h> // Required for GetModuleFileName
 
 #include "FileMonitor.h"
 #include "LogWatcher.h"
-#include "AlertSender.h" 
+#include "AlertSender.h"
+#include "Service.h" 
 
-using namespace std;
 using json = nlohmann::json;
 
-int main() {
-    cout << "--- Sentinel HIDS v4.0 (Network Edition) ---" << endl;
-    cout << "[INFO] Working Directory: " << filesystem::current_path() << endl;
+// --- WORKER THREADS ---
 
-    // --- 1. Load Configuration ---
-    string config_filename = "config.json";
-    ifstream config_file(config_filename);
-
-    if (!config_file.is_open()) {
-        cerr << "[CRITICAL] Config file missing: " << config_filename << endl;
-        return 1;
+// Thread function for File Integrity Monitoring
+void run_fim_thread(std::string target, int interval_ms, AlertSender& alert_sender) {
+    // Ensure the target file exists to prevent errors
+    if (!std::filesystem::exists(target)) {
+        std::ofstream(target) << "Sentinel Test File";
     }
 
-    json config;
+    FileMonitor monitor(target);
+
+    // Loop continues until the service receives a stop signal
+    while (service_running) {
+        monitor.check(alert_sender);
+        std::this_thread::sleep_for(std::chrono::milliseconds(interval_ms));
+    }
+}
+
+// Thread function for Log Analysis
+void run_log_thread(std::string target, int interval_ms, AlertSender& alert_sender) {
+    if (!std::filesystem::exists(target)) {
+        std::ofstream(target) << "";
+    }
+
+    LogWatcher watcher(target);
+    while (service_running) {
+        watcher.check(alert_sender);
+        std::this_thread::sleep_for(std::chrono::milliseconds(interval_ms));
+    }
+}
+
+// --- MAIN BUSINESS LOGIC ---
+// This function is shared between Console Mode and Service Mode
+void sentinel_main_logic() {
+    // 1. Automatic Working Directory Detection
+    // Windows Services default to C:\Windows\System32. We must change this 
+    // to the directory where the .exe is located to find config.json correctly.
+    char buffer[MAX_PATH];
+    GetModuleFileName(NULL, buffer, MAX_PATH);
+    std::filesystem::path exe_path(buffer);
+    std::filesystem::path exe_dir = exe_path.parent_path();
+
     try {
-        config_file >> config;
+        std::filesystem::current_path(exe_dir);
     }
-    catch (const json::parse_error& e) {
-        cerr << "[CRITICAL] JSON syntax error: " << e.what() << endl;
-        return 1;
+    catch (...) {}
+
+    // 2. Load Configuration
+    std::string config_filename = "config.json";
+    std::ifstream config_file(config_filename);
+    json config;
+
+    if (config_file.is_open()) {
+        try { config_file >> config; }
+        catch (...) {}
     }
 
-    // Parse settings with safe defaults
-    string fim_target = config.value("fim_target", "test.txt");
-    string log_target = config.value("log_target", "system.log");
-    string webhook_url = config.value("discord_webhook", "");
+    // Parse settings with fallback default values
+    std::string fim_target = config.value("fim_target", "test.txt");
+    std::string log_target = config.value("log_target", "system.log");
+    std::string webhook_url = config.value("discord_webhook", "");
     int interval = config.value("check_interval_ms", 2000);
 
-    cout << "[CONFIG] Loaded successfully." << endl;
-
-    // --- 2. Initialize Modules ---
-
-    // Setup Network Alerting
     AlertSender alert_sender(webhook_url);
     if (!webhook_url.empty()) {
-        cout << "[NETWORK] Integration active." << endl;
-        alert_sender.send("**Sentinel Started**");
-    }
-    else {
-        cout << "[INFO] Local Mode (No Webhook configured)." << endl;
+        alert_sender.send("**Sentinel v5.0 Service Started**");
     }
 
-    // Setup FIM
-    vector<FileMonitor> file_monitors;
-    file_monitors.emplace_back(fim_target);
+    // 3. Spawn Worker Threads
+    // We use std::ref to pass the AlertSender by reference
+    std::thread t1(run_fim_thread, fim_target, interval, std::ref(alert_sender));
+    std::thread t2(run_log_thread, log_target, interval, std::ref(alert_sender));
 
-    // Setup Log Analysis
-    LogWatcher log_watcher(log_target);
+    // 4. Wait for shutdown signal
+    if (t1.joinable()) t1.join();
+    if (t2.joinable()) t2.join();
 
-    cout << "[INIT] System armed. Press Ctrl+C to exit." << endl;
-
-    // --- 3. Main Loop ---
-    while (true) {
-        // Check files
-        for (auto& monitor : file_monitors) {
-            monitor.check(alert_sender);
-        }
-
-        // Check logs
-        log_watcher.check(alert_sender);
-
-        // Sleep to reduce CPU usage
-        this_thread::sleep_for(chrono::milliseconds(interval));
+    if (!webhook_url.empty()) {
+        alert_sender.send("**Sentinel Service Stopped**");
     }
+}
+
+// --- ENTRY POINT ---
+int main(int argc, char** argv) {
+    // 1. Attempt to run as a Windows Service
+    // If StartServiceCtrlDispatcher succeeds, this call blocks until the service stops.
+    if (Service::Run("Sentinel")) {
+        return 0;
+    }
+
+    // 2. Fallback: Console Mode
+    // If we are here, it means we were run manually by the user (not by SCM).
+    std::cout << "--- Sentinel v5.0 (Console Mode) ---" << std::endl;
+    std::cout << "[INFO] Running locally. Press Ctrl+C to stop." << std::endl;
+
+    // Manually set the flag to true for console execution
+    service_running = true;
+    sentinel_main_logic();
 
     return 0;
 }

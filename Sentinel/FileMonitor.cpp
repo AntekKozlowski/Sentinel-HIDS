@@ -21,7 +21,7 @@ bool FileMonitor::check(AlertSender& sender) {
 
     // Compare current state vs baseline
     if (current_hash != last_hash) {
-        string msg = "🚨 **FIM ALERT**\nFile modified: `" + monitored_path.string() + "`";
+        string msg = "**FIM ALERT**\nFile modified: `" + monitored_path.string() + "`";
         cout << "\n[!!! ALERT !!!] " << msg << endl;
 
         // Trigger remote alert

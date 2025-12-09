@@ -4,18 +4,13 @@
 #include <regex>
 #include "AlertSender.h"
 
-using namespace std;
-
-// Log Analysis Module using Regex heuristics
 class LogWatcher {
 public:
-    LogWatcher(const string& filepath);
-
-    // Scans new log entries for suspicious patterns
+    LogWatcher(const std::string& filepath);
     void check(AlertSender& sender);
 
 private:
-    string monitored_path;
-    streampos last_position;
-    regex suspicious_pattern;
+    std::string monitored_path;
+    std::streampos last_position; // std::streampos
+    std::regex suspicious_pattern; // std::regex
 };

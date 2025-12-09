@@ -2,5 +2,5 @@
   "fim_target": "test.txt",
   "log_target": "system.log",
   "check_interval_ms": 2000,
-  "discord_webhook": "YOUR_WEBHOOK_URL"
+  "discord_webhook": "https://discord.com/api/webhooks/1446902496768430102/5DcEkfMf5wPBpxEgdzPNEJ-1srUkmUSDE5o8NHK6QYnT4C8MrHufeDA4DDRc1vrpc4Hn"
 }
